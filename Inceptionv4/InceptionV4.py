@@ -151,3 +151,56 @@ class InceptionB(nn.Module):
         return x
 
 
+class InceptionC(nn.Module):
+    def __init__(self):
+        super(InceptionC, self).__init__()
+
+        self.convll = nn.Sequential(
+            nn.AvgPool2d((3, 3), 1, padding=1),
+            *(conv_block(1536, 256, (1, 1), stride=1, padding=0))
+        )
+        
+        self.convl = nn.Sequential(
+            *(conv_block(1536, 256, (1, 1), stride=1, padding=0))
+        )
+        
+        self.convr_bottlenecek = nn.Sequential(*(
+            conv_block(1536, 384, (1, 1), stride=1, padding=0)
+        ))
+        self.convr_l = nn.Sequential(*(
+            conv_block(384, 256, (1, 3), stride=1, padding=(0, 1))
+        ))
+        self.convr_r = nn.Sequential(*(
+            conv_block(384, 256, (3, 1), stride=1, padding=(1, 0))
+        ))
+        
+        
+        self.convrr_bottleneck = nn.Sequential(*(
+            conv_block(1536, 384, (1, 1), stride=1, padding=0) +
+            conv_block(384, 448, (1, 3), stride=1, padding=(0, 1)) +
+            conv_block(448, 512, (3, 1), stride=1, padding=(1, 0))
+        ))
+        self.convrr_l = nn.Sequential(*(
+            conv_block(512, 256, (3, 1), stride=1, padding=(1, 0))
+        ))
+        self.convrr_r = nn.Sequential(*(
+            conv_block(512, 256, (1, 3), stride=1, padding=(0, 1))
+        ))
+    
+    
+    def forward(self, x):
+        xll = self.convll(x)
+        xl = self.convl(x)
+        
+        xr = self.convr_bottlenecek(x)
+        xr_l = self.convr_l(xr)
+        xr_r = self.convr_r(xr)
+        
+        xrr = self.convrr_bottleneck(x)
+        xrr_l = self.convrr_l(xrr)
+        xrr_r = self.convrr_r(xrr)
+        
+        x = torch.concat([xll, xl, xr_l, xr_r, xrr_l, xrr_r], dim=1)
+        return x
+
+    
