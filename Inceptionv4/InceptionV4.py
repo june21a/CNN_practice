@@ -112,3 +112,42 @@ class ReductionA(nn.Module):
         return x
 
 
+
+class InceptionB(nn.Module):
+    def __init__(self):
+        super(InceptionB, self).__init__()
+        
+        self.convll = nn.Sequential(
+            nn.AvgPool2d((3, 3), 1, padding=1),
+            *(conv_block(1024, 128, (1, 1), stride=1, padding=0))
+        )
+        
+        self.convl = nn.Sequential(*(
+            conv_block(1024, 384, (1, 1), stride=1, padding=0)
+        ))
+        
+        self.convr = nn.Sequential(*(
+            conv_block(1024, 192, (1, 1), stride=1, padding=0) +
+            conv_block(192, 224, (1, 7), stride=1, padding=(0, 3)) +
+            conv_block(224, 256, (7, 1), stride=1, padding=(3, 0))
+        ))
+        
+        self.convrr = nn.Sequential(*(
+            conv_block(1024, 192, (1, 1), stride=1, padding=0) +
+            conv_block(192, 192, (1, 7), stride=1, padding=(0, 3)) +
+            conv_block(192, 224, (7, 1), stride=1, padding=(3, 0)) +
+            conv_block(224, 224, (1, 7), stride=1, padding=(0, 3)) +
+            conv_block(224, 256, (7, 1), stride=1, padding=(3, 0))
+        ))
+    
+    
+    def forward(self, x):
+        xll = self.convll(x)
+        xl = self.convl(x)
+        xr = self.convr(x)
+        xrr = self.convrr(x)
+        
+        x = torch.concat([xll, xl, xr, xrr], dim=1)
+        return x
+
+
