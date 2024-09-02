@@ -11,10 +11,10 @@ def conv_block(in_channel, out_channel, filter_size, stride, padding):
 
 
 class InceptionV4StemBlock(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self):
         super(InceptionV4StemBlock ,self).__init__()
         
-        self.input_size = input_size
+        
         self.conv1 = nn.Sequential(
             *(conv_block(3, 32, (3, 3), stride = 2, padding=0) +
             conv_block(32, 32, (3, 3), stride=1, padding=0) +
@@ -55,4 +55,39 @@ class InceptionV4StemBlock(nn.Module):
         xl = self.conv4_1(x)
         xr = self.maxpool4_1(x)
         return torch.concat([xl, xr], dim=1)
+
+
+class InceptionA(nn.Module):
+    def __init__(self):
+        super(InceptionA ,self).__init__()
+        
+        self.convll = nn.Sequential(
+            nn.AvgPool2d((3, 3), 1, padding=1),
+            *(conv_block(384, 96, (1, 1), stride=1, padding=0))
+        )
+        
+        self.convl = nn.Sequential(
+            *(conv_block(384, 96, (1, 1), stride=1, padding=0))
+        )
+        
+        self.convr = nn.Sequential(
+            *(conv_block(384, 64, (1, 1), stride=1, padding=0) + 
+              conv_block(64, 96, (3, 3), stride=1, padding=1))
+        )
+        
+        self.convrr = nn.Sequential(
+            *(conv_block(384, 64, (1, 1), stride=1, padding=0) + 
+              conv_block(64, 96, (3, 3), stride=1, padding=1) +
+              conv_block(96, 96, (3, 3), stride=1, padding=1))
+        )
+    
+    def forward(self, x):
+        xll = self.convll(x)
+        xl = self.convl(x)
+        xr = self.convr(x)
+        xrr = self.convrr(x)
+        
+        x = torch.concat([xll, xl, xr, xrr], dim=1)
+        return x
+
 
