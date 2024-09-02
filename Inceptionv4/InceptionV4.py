@@ -91,3 +91,24 @@ class InceptionA(nn.Module):
         return x
 
 
+
+class ReductionA(nn.Module):
+    def __init__(self):
+        super(ReductionA, self).__init__()
+        
+        self.convl = nn.MaxPool2d((3, 3), stride=2, padding=0)
+        self.convc = nn.Sequential(*(conv_block(384, 384, (3, 3), stride=2, padding=0)))
+        self.convr = nn.Sequential(*(
+            conv_block(384, 192, (1, 1), stride=1, padding=0) +
+            conv_block(192, 224, (3, 3), stride=1, padding=1) +
+            conv_block(224, 256, (3, 3), stride=2, padding=0)
+        )) 
+    
+    def forward(self, x):
+        xl = self.convl(x)
+        xc = self.convc(x)
+        xr = self.convr(x)
+        x = torch.concat([xl, xc, xr], dim=1)
+        return x
+
+
