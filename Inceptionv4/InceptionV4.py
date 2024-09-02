@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 def conv_block(in_channel, out_channel, filter_size, stride, padding):
@@ -229,3 +230,37 @@ class ReductionB(nn.Module):
         
         x = torch.concat([xr, xc, xl], dim=1)
         return x
+
+
+class InceptionV4(nn.Module):
+    def __init__(self, input_size, num_classes):
+        super(InceptionV4, self).__init__()
+        assert input_size > 44
+        
+        layers = []
+        layers.append(InceptionV4StemBlock())
+        for i in range(4):
+            layers.append(InceptionA())
+        layers.append(ReductionA())
+        
+        for i in range(7):
+            layers.append(InceptionB())
+        layers.append(ReductionB())
+        
+        for i in range(3):
+            layers.append(InceptionC())
+        
+        self.conv = nn.Sequential(*layers)
+        self.dropout = nn.Dropout(p=0.8)
+        self.dense = nn.Linear(1536, num_classes)
+    
+    def forward(self, x):
+        x = self.conv(x)
+        x = F.adaptive_avg_pool2d(x, (1, 1))
+        x = x.squeeze(dim=[-1, -2])
+        
+        x = self.dropout(x)
+        x = self.dense(x)
+        return x
+
+    
