@@ -203,4 +203,29 @@ class InceptionC(nn.Module):
         x = torch.concat([xll, xl, xr_l, xr_r, xrr_l, xrr_r], dim=1)
         return x
 
+
+
+class ReductionB(nn.Module):
+    def __init__(self):
+        super(ReductionB, self).__init__()
+        
+        self.convr = nn.MaxPool2d((3, 3), stride=2, padding=0)
+        self.convc = nn.Sequential(*(
+            conv_block(1024, 192, (1, 1), stride=1, padding=0) +
+            conv_block(192, 192, (3, 3), stride=2, padding=0)
+        ))
+        
+        self.convl = nn.Sequential(*(
+            conv_block(1024, 256, (1, 1), stride=1, padding=0) +
+            conv_block(256, 256, (1, 7), stride=1, padding=(0, 3)) +
+            conv_block(256, 320, (7, 1), stride=1, padding=(3, 0)) +
+            conv_block(320, 320, (3, 3), stride=2, padding=0)
+        ))
     
+    def forward(self, x):
+        xr = self.convr(x)
+        xc = self.convc(x)
+        xl = self.convl(x)
+        
+        x = torch.concat([xr, xc, xl], dim=1)
+        return x
